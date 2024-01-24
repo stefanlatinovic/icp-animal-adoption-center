@@ -1,5 +1,3 @@
-import { Canister } from 'azle';
+import { Canister } from "azle";
 
-export default Canister({
-    
-});
+export default Canister({});
