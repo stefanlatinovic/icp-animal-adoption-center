@@ -1,0 +1,26 @@
+{
+    "name": "animal-adoption-center",
+    "version": "0.0.1",
+    "description": "An animal adoption center canister built on the Internet Computer Protocol",
+    "author": "Stefan Latinovic",
+    "homepage": "https://github.com/stefanlatinovic/icp-animal-adoption-center#readme",
+    "bugs": "https://github.com/stefanlatinovic/icp-animal-adoption-center/issues",
+    "license": "MIT",
+    "private": false,
+    "scripts": {
+        "clean": "rm -rf .azle .dfx node_modules package-lock.json",
+        "dfx_install": "DFX_VERSION=0.15.1 sh -ci \"$(curl -fsSL https://sdk.dfinity.org/install.sh)\"",
+        "replica_start": "dfx start --background",
+        "replica_stop": "dfx stop",
+        "canister_deploy_local": "dfx deploy animal_adoption_center",
+        "canister_deploy_mainnet": "dfx deploy --network ic animal_adoption_center",
+        "canister_uninstall": "dfx canister uninstall-code animal_adoption_center",
+        "canister_call": "dfx canister call animal_adoption_center",
+    },
+    "dependencies": {
+        "azle": "0.19.0"
+    },
+    "engines": {
+        "node": "^18"
+    }
+}

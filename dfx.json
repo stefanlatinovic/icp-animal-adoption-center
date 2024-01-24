@@ -1,0 +1,12 @@
+{
+    "canisters": {
+        "animal_adoption_center": {
+            "type": "custom",
+            "main": "src/index.ts",
+            "candid": "src/index.did",
+            "build": "npx azle animal_adoption_center",
+            "wasm": ".azle/animal_adoption_center/animal_adoption_center.wasm",
+            "gzip": true
+        }
+    }
+}
