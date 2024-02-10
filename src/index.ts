@@ -11,10 +11,12 @@ import {
   Variant,
   StableBTreeMap,
   update,
+  query,
   Result,
   Err,
   Ok,
   ic,
+  Vec,
 } from "azle";
 import { v4 as uuidv4 } from "uuid";
 
@@ -134,6 +136,17 @@ export default Canister({
       return Ok(adoptionListing);
     }
   ),
+
+  /**
+   * Gets animals available for adoption
+   * @returns list of animals available for adoption
+   */
+  getAvailableForAdoption: query([], Vec(AdoptionListing), () => {
+    // Return animals available for adoption
+    return adoptionListings
+      .values()
+      .filter((listing) => listing.adoptionStatus === AdoptionStatus.Available);
+  }),
 });
 
 /**
