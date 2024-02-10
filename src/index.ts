@@ -147,6 +147,29 @@ export default Canister({
       .values()
       .filter((listing) => listing.adoptionStatus === AdoptionStatus.Available);
   }),
+
+  /**
+   * Revokes animal listing for adoption
+   * @param adoptionListingId - Adoption listing identifier
+   * @returns revoked adoption listing or an error
+   */
+  revokeAdoptionListing: update(
+    [text],
+    Result(AdoptionListing, Error),
+    (adoptionListingId) => {
+      // Validate revoke adoption listing request
+      const err: Opt<Error> =
+        validateRevokeAdoptionListingRequest(adoptionListingId);
+      if (err.Some) {
+        return err.Some;
+      }
+
+      // Remove adoption listing
+      adoptionListings.remove(adoptionListingId);
+
+      return Ok(adoptionListing);
+    }
+  ),
 });
 
 /**
@@ -174,6 +197,49 @@ function validateAdoptionListingPayload(
   // Validate invalid fields
   if (!Object.values(Gender).includes(payload.gender as unknown as Gender)) {
     return Some(Err({ BadRequest: "invalid gender" }));
+  }
+
+  return None;
+}
+
+/**
+ * Validates revoke adoption listing request
+ * @param adoptionListingId - Adoption listing identifier
+ * @returns optional error
+ */
+function validateRevokeAdoptionListingRequest(
+  adoptionListingId: text
+): Opt<Error> {
+  // Validate adoption listing identifier
+  if (!adoptionListingId) {
+    return Some(Err({ BadRequest: "adoption listing ID is missing" }));
+  }
+  if (!adoptionListings.containsKey(adoptionListingId)) {
+    return Some(
+      Err({
+        BadRequest: `adoption listing with id "${adoptionListingId}" not found`,
+      })
+    );
+  }
+
+  const adoptionListing = adoptionListings.get(adoptionListingId).Some;
+
+  // Validate adoption listing submitter
+  if (adoptionListing?.listedBy.toText() != ic.caller().toText()) {
+    return Some(
+      Err({
+        BadRequest: "only submitter can revoke adoption listing",
+      })
+    );
+  }
+
+  // Validate adoption listing status
+  if (adoptionListing?.adoptionStatus !== AdoptionStatus.Available) {
+    return Some(
+      Err({
+        BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
+      })
+    );
   }
 
   return None;
