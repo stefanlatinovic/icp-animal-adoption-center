@@ -43,6 +43,18 @@ enum Gender {
 }
 
 /**
+ * Enumeration for adoption request statuses
+ */
+enum AdoptionRequestStatus {
+  // Adoption request is created and is in pending state
+  Pending = "pending",
+  // Adoption request is approved
+  Approved = "approved",
+  // Adoption request is rejected
+  Rejected = "rejected",
+}
+
+/**
  * This type represents an animal
  */
 const Animal = Record({
@@ -83,6 +95,20 @@ const AdoptionListingPayload = Record({
 });
 
 /**
+ * This type represents an adoption request
+ */
+const AdoptionRequest = Record({
+  id: text,
+  adoptionListingId: text,
+  adoptionRequestStatus: text,
+  submittedBy: Principal,
+  submittedAt: nat64,
+  updatedAt: Opt(nat64),
+});
+
+type AdoptionRequest = typeof AdoptionRequest.tsType;
+
+/**
  * This type represents Error variant
  */
 const Error = Variant({
@@ -93,6 +119,7 @@ const Error = Variant({
 
 // Storage variables
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
+const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
 export default Canister({
   /**
@@ -170,6 +197,48 @@ export default Canister({
       return Ok(adoptionListing);
     }
   ),
+
+  /**
+   * Submits adoption request
+   * @param adoptionListingId - Adoption listing identifier
+   * @returns created adoption request or an error
+   */
+  submitAdoptionRequest: update(
+    [text],
+    Result(AdoptionRequest, Error),
+    (adoptionListingId) => {
+      // Validate adoption request
+      const err: Opt<Error> = validateAdoptionRequest(adoptionListingId);
+      if (err.Some) {
+        return err.Some;
+      }
+
+      // Generate adoption request identifier
+      const id = uuidv4();
+
+      // Get adoption listing
+      const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
+
+      // Populate adoption request
+      const adoptionRequest: AdoptionRequest = {
+        id: id,
+        adoptionListingId: adoptionListing.id,
+        adoptionRequestStatus: AdoptionRequestStatus.Pending,
+        submittedBy: ic.caller(),
+        submittedAt: ic.time(),
+        updatedAt: None,
+      };
+
+      // Store adoption request
+      adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
+
+      // Update adoption listing status
+      adoptionListing.adoptionStatus = AdoptionStatus.OnHold;
+      adoptionListings.insert(adoptionListing.id, adoptionListing);
+
+      return Ok(adoptionRequest);
+    }
+  ),
 });
 
 /**
@@ -238,6 +307,38 @@ function validateRevokeAdoptionListingRequest(
     return Some(
       Err({
         BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
+      })
+    );
+  }
+
+  return None;
+}
+
+/**
+ * Validates adoption request
+ * @param adoptionListingId - Adoption listing identifier
+ * @returns optional error
+ */
+function validateAdoptionRequest(adoptionListingId: text): Opt<Error> {
+  // Validate adoption listing identifier
+  if (!adoptionListingId) {
+    return Some(Err({ BadRequest: "adoption listing ID is missing" }));
+  }
+  if (!adoptionListings.containsKey(adoptionListingId)) {
+    return Some(
+      Err({
+        BadRequest: `adoption listing with id "${adoptionListingId}" not found`,
+      })
+    );
+  }
+
+  const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
+
+  // Validate adoption listing status
+  if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
+    return Some(
+      Err({
+        BadRequest: `adoption request for adoption listings with status "${adoptionListing?.adoptionStatus}" cannot be submitted`,
       })
     );
   }
