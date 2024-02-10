@@ -16,9 +16,14 @@
         "canister_deploy_mainnet": "dfx deploy --network ic animal_adoption_center",
         "canister_uninstall": "dfx canister uninstall-code animal_adoption_center",
         "canister_call": "dfx canister call animal_adoption_center",
+        "canister_call_list_for_adoption": "dfx canister call animal_adoption_center listForAdoption '(record {\"name\"= \"name1\"; \"species\"= \"species1\"; \"breed\"= \"breed1\"; \"gender\"= \"male\"; \"age\"= 1; \"description\"= \"description1\";})'"
     },
     "dependencies": {
-        "azle": "0.19.0"
+        "azle": "0.19.0",
+        "uuid": "^9.0.1"
+    },
+    "devDependencies": {
+        "@types/uuid": "^9.0.7"
     },
     "engines": {
         "node": "^18"

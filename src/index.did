@@ -1,0 +1,3 @@
+service: () -> {
+    listForAdoption: (record {age:nat8; name:text; description:text; gender:text; breed:text; species:text}) -> (variant {Ok:record {id:text; listedAt:nat64; listedBy:principal; animal:record {age:nat8; name:text; description:text; gender:text; breed:text; species:text}; adoptionStatus:text; updatedAt:opt nat64}; Err:variant {NotFound:text; Forbidden:text; BadRequest:text}});
+}
