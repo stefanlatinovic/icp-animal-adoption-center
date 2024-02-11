@@ -239,6 +239,42 @@ export default Canister({
       return Ok(adoptionRequest);
     }
   ),
+
+  /**
+   * Approves adoption request
+   * @param adoptionRequestId - Adoption request identifier
+   * @returns approved adoption request or an error
+   */
+  approveAdoptionRequest: update(
+    [text],
+    Result(AdoptionRequest, Error),
+    (adoptionRequestId) => {
+      // Validate adoption request approval
+      const err: Opt<Error> =
+        validateAdoptionRequestProcessing(adoptionRequestId);
+      if (err.Some) {
+        return err.Some;
+      }
+
+      // Get adoption request
+      const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
+
+      // Update adoption request status
+      adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Approved;
+      adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
+
+      // Get adoption listing
+      const adoptionListing = adoptionListings.get(
+        adoptionRequest.adoptionListingId
+      ).Some!;
+
+      // Update adoption listing status
+      adoptionListing.adoptionStatus = AdoptionStatus.Adopted;
+      adoptionListings.insert(adoptionListing.id, adoptionListing);
+
+      return Ok(adoptionRequest);
+    }
+  ),
 });
 
 /**
@@ -343,6 +379,44 @@ function validateAdoptionRequest(adoptionListingId: text): Opt<Error> {
     );
   }
 
+  return None;
+}
+
+/**
+ * Validates adoption request processing
+ * @param adoptionRequestId - Adoption request identifier
+ * @returns optional error
+ */
+function validateAdoptionRequestProcessing(
+  adoptionRequestId: text
+): Opt<Error> {
+  // Only employees can process adoption requests
+  if (!isEmployee(ic.caller())) {
+    return Some(
+      Err({
+        BadRequest: "only employees can process adoption requests",
+      })
+    );
+  }
+  // Validate adoption request identifier
+  if (!adoptionRequests.containsKey(adoptionRequestId)) {
+    return Some(
+      Err({
+        BadRequest: `adoption request with id "${adoptionRequestId}" not found`,
+      })
+    );
+  }
+
+  const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
+
+  // Validate adoption request status
+  if (adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending) {
+    return Some(
+      Err({
+        BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be process`,
+      })
+    );
+  }
   return None;
 }
 
