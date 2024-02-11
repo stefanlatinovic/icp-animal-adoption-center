@@ -413,6 +413,11 @@ function validateAdoptionListingPayload(
     return Some(Err({ BadRequest: "invalid gender" }));
   }
 
+  // Check if there is enough space available in the shelter
+  if (getCurrentShelterSize() + 1 > shelterCapacity) {
+    return Some(Err({ BadRequest: "no more space in the shelter" }));
+  }
+
   return None;
 }
 
@@ -527,6 +532,17 @@ function validateAdoptionRequestProcessing(
     );
   }
   return None;
+}
+
+/**
+ * Gets current shelter size
+ * @returns current shelter size
+ */
+function getCurrentShelterSize(): number {
+  return adoptionListings
+    .values()
+    .filter((listing) => listing.adoptionStatus !== AdoptionStatus.Adopted)
+    .length;
 }
 
 // Mocking the 'crypto' object for testing purposes
