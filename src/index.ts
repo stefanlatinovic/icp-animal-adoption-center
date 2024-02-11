@@ -14,8 +14,6 @@ import {
   update,
   query,
   Result,
-  Err,
-  Ok,
   ic,
   Vec,
   init,
@@ -254,7 +252,7 @@ export default Canister({
       // Store adoption listing
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
-      return Ok(adoptionListing);
+      return Result.Ok(adoptionListing);
     }
   ),
 
@@ -269,14 +267,14 @@ export default Canister({
     (adoptionListingId) => {
       // Validate adoption listing identifier
       if (!adoptionListingId) {
-        return Err({ BadRequest: "adoption listing ID is missing" });
+        return Result.Err({ BadRequest: "adoption listing ID is missing" });
       }
       if (!adoptionListings.containsKey(adoptionListingId)) {
-        return Err({
+        return Result.Err({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
       }
-      return Ok(adoptionListings.get(adoptionListingId).Some!);
+      return Result.Ok(adoptionListings.get(adoptionListingId).Some!);
     }
   ),
 
@@ -326,7 +324,7 @@ export default Canister({
       // Remove adoption listing
       adoptionListings.remove(adoptionListingId);
 
-      return Ok(adoptionListing);
+      return Result.Ok(adoptionListing);
     }
   ),
 
@@ -376,7 +374,7 @@ export default Canister({
       adoptionListing.adoptionStatus = AdoptionStatus.OnHold;
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
-      return Ok(adoptionRequest);
+      return Result.Ok(adoptionRequest);
     }
   ),
 
@@ -398,7 +396,7 @@ export default Canister({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
       }
-      return Ok(adoptionRequests.get(adoptionRequestId).Some!);
+      return Result.Ok(adoptionRequests.get(adoptionRequestId).Some!);
     }
   ),
 
@@ -446,7 +444,7 @@ export default Canister({
       adoptionListing.adoptionStatus = AdoptionStatus.Adopted;
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
-      return Ok(adoptionRequest);
+      return Result.Ok(adoptionRequest);
     }
   ),
 
@@ -494,7 +492,7 @@ export default Canister({
       adoptionListing.adoptionStatus = AdoptionStatus.Available;
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
-      return Ok(adoptionRequest);
+      return Result.Ok(adoptionRequest);
     }
   ),
 });
