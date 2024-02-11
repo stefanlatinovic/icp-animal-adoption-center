@@ -275,6 +275,42 @@ export default Canister({
       return Ok(adoptionRequest);
     }
   ),
+
+  /**
+   * Rejects adoption request
+   * @param adoptionRequestId - Adoption request identifier
+   * @returns rejected adoption request or an error
+   */
+  rejectAdoptionRequest: update(
+    [text],
+    Result(AdoptionRequest, Error),
+    (adoptionRequestId) => {
+      // Validate adoption request rejection
+      const err: Opt<Error> =
+        validateAdoptionRequestProcessing(adoptionRequestId);
+      if (err.Some) {
+        return err.Some;
+      }
+
+      // Get adoption request
+      const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
+
+      // Update adoption request status
+      adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Rejected;
+      adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
+
+      // Get adoption listing
+      const adoptionListing = adoptionListings.get(
+        adoptionRequest.adoptionListingId
+      ).Some!;
+
+      // Update adoption listing status
+      adoptionListing.adoptionStatus = AdoptionStatus.Available;
+      adoptionListings.insert(adoptionListing.id, adoptionListing);
+
+      return Ok(adoptionRequest);
+    }
+  ),
 });
 
 /**
