@@ -139,6 +139,9 @@ const isEmployee = (employee: Principal) =>
 const adoptionListingExists = (adoptionListingId: text) => {
   return adoptionListings.containsKey(adoptionListingId);
 };
+const adoptionRequestExists = (adoptionRequestId: text) => {
+  return adoptionRequests.containsKey(adoptionRequestId);
+};
 
 export default Canister({
   /**
@@ -394,7 +397,7 @@ export default Canister({
       if (!adoptionRequestId) {
         return Result.Err({ BadRequest: "adoption request ID is missing" });
       }
-      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+      if (!adoptionRequestExists(adoptionRequestId)) {
         return Result.Err({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
@@ -419,7 +422,7 @@ export default Canister({
         });
       }
       // Validate adoption request identifier
-      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+      if (!adoptionRequestExists(adoptionRequestId)) {
         return Result.Err({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
@@ -467,7 +470,7 @@ export default Canister({
         });
       }
       // Validate adoption request identifier
-      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+      if (!adoptionRequestExists(adoptionRequestId)) {
         return Result.Err({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
