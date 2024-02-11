@@ -238,6 +238,28 @@ export default Canister({
   ),
 
   /**
+   * Gets adoption listing by identifier
+   * @param adoptionListingId - Adoption listing identifier
+   * @returns adoption listing or an error
+   */
+  getAdoptionListing: query(
+    [text],
+    Result(AdoptionListing, Error),
+    (adoptionListingId) => {
+      // Validate adoption listing identifier
+      if (!adoptionListingId) {
+        return Err({ BadRequest: "adoption listing ID is missing" });
+      }
+      if (!adoptionListings.containsKey(adoptionListingId)) {
+        return Err({
+          NotFound: `adoption listing with id "${adoptionListingId}" not found`,
+        });
+      }
+      return Ok(adoptionListings.get(adoptionListingId).Some!);
+    }
+  ),
+
+  /**
    * Gets animals available for adoption
    * @returns list of animals available for adoption
    */
