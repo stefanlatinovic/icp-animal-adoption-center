@@ -336,6 +336,28 @@ export default Canister({
   ),
 
   /**
+   * Gets adoption request by identifier
+   * @param adoptionRequestId - Adoption request identifier
+   * @returns adoption request or an error
+   */
+  getAdoptionRequest: query(
+    [text],
+    Result(AdoptionRequest, Error),
+    (adoptionRequestId) => {
+      // Validate adoption request identifier
+      if (!adoptionRequestId) {
+        return Err({ BadRequest: "adoption request ID is missing" });
+      }
+      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+        return Err({
+          NotFound: `adoption request with id "${adoptionRequestId}" not found`,
+        });
+      }
+      return Ok(adoptionRequests.get(adoptionRequestId).Some!);
+    }
+  ),
+
+  /**
    * Approves adoption request
    * @param adoptionRequestId - Adoption request identifier
    * @returns approved adoption request or an error
