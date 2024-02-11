@@ -17,6 +17,7 @@ import {
   Ok,
   ic,
   Vec,
+  init,
 } from "azle";
 import { v4 as uuidv4 } from "uuid";
 
@@ -117,11 +118,21 @@ const Error = Variant({
   BadRequest: text,
 });
 
+// Owner of the animal adoption center
+let owner: Principal;
+
 // Storage variables
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
 export default Canister({
+  /**
+   * Initializes the canister and sets the owner of the animal adoption center
+   */
+  init: init([], () => {
+    owner = ic.caller();
+  }),
+
   /**
    * Lists animal for adoption
    * @param payload - Payload for listing for adoption
