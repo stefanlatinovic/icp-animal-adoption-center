@@ -3,6 +3,7 @@ import {
   Record,
   text,
   nat8,
+  nat16,
   nat64,
   Principal,
   Opt,
@@ -121,6 +122,9 @@ const Error = Variant({
 // Owner of the animal adoption center
 let owner: Principal;
 
+// Shelter capacity
+let shelterCapacity: nat16 = 5;
+
 // Storage variables
 const employees: Principal[] = [];
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
@@ -163,6 +167,32 @@ export default Canister({
     employees.push(employee);
 
     return Ok(employee);
+  }),
+
+  /**
+   * Sets shelter capacity
+   * @param newShelterCapacity - New shelter capacity
+   * @returns optional error
+   */
+  setShelterCapacity: update([nat16], Opt(Error), (newShelterCapacity) => {
+    // Only an owner can update shelter capacity
+    if (ic.caller().toText() !== owner.toText()) {
+      return Some({ BadRequest: "only an owner can set shelter capacity" });
+    }
+    // Validate new shelter capacity
+    if (newShelterCapacity < 0) {
+      return Some({ BadRequest: "shelter capacity cannot be negative" });
+    }
+    shelterCapacity = newShelterCapacity;
+    return None;
+  }),
+
+  /**
+   * Gets shelter capacity
+   * @returns shelter capacity
+   */
+  getShelterCapacity: update([], nat16, () => {
+    return shelterCapacity;
   }),
 
   /**

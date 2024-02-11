@@ -19,6 +19,8 @@
         "canister_uninstall": "dfx canister uninstall-code animal_adoption_center --identity owner",
         "canister_call": "dfx canister call animal_adoption_center",
         "canister_call_add_employee": "dfx identity get-principal --identity employee | xargs -I {} dfx canister call animal_adoption_center --identity owner addEmployee '(principal \"{}\")'",
+        "canister_call_set_shelter_capacity": "dfx canister call animal_adoption_center --identity owner setShelterCapacity",
+        "canister_call_get_shelter_capacity": "dfx canister call animal_adoption_center getShelterCapacity",
         "canister_call_list_for_adoption": "dfx canister call animal_adoption_center listForAdoption '(record {\"name\"= \"name1\"; \"species\"= \"species1\"; \"breed\"= \"breed1\"; \"gender\"= \"male\"; \"age\"= 1; \"description\"= \"description1\";})'",
         "canister_call_get_available_for_adoption": "dfx canister call animal_adoption_center getAvailableForAdoption",
         "canister_call_revoke_adoption_listing": "dfx canister call animal_adoption_center revokeAdoptionListing",
