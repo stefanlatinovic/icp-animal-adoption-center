@@ -122,8 +122,15 @@ const Error = Variant({
 let owner: Principal;
 
 // Storage variables
+const employees: Principal[] = [];
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
+
+// Helper functions
+const isEmployee = (employee: Principal) =>
+  employees.some((emp) => {
+    return JSON.stringify(employee) === JSON.stringify(emp);
+  });
 
 export default Canister({
   /**
@@ -131,6 +138,31 @@ export default Canister({
    */
   init: init([], () => {
     owner = ic.caller();
+  }),
+
+  /**
+   * Adds new employee
+   * @param employee - Employee to be added
+   * @returns added new employee or an error
+   */
+  addEmployee: update([Principal], Result(Principal, Error), (employee) => {
+    // Only an owner can add new employees
+    if (ic.caller().toText() !== owner.toText()) {
+      return Err({ BadRequest: "only an owner can add an employee" });
+    }
+    // Validate employee
+    if (employee.isAnonymous()) {
+      return Err({ BadRequest: "employee cannot be anonymous" });
+    }
+    if (isEmployee(employee)) {
+      return Err({
+        BadRequest: `"${employee}" is already an employee`,
+      });
+    }
+
+    employees.push(employee);
+
+    return Ok(employee);
   }),
 
   /**
