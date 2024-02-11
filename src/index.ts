@@ -207,10 +207,28 @@ export default Canister({
     [AdoptionListingPayload],
     Result(AdoptionListing, Error),
     (payload) => {
-      // Validate adoption listing payload
-      const err: Opt<Error> = validateAdoptionListingPayload(payload);
-      if (err.Some) {
-        return err.Some;
+      // Validate missing fields
+      if (!payload.species) {
+        return Result.Err({ BadRequest: "species is missing" });
+      }
+      if (!payload.breed) {
+        return Result.Err({ BadRequest: "breed is missing" });
+      }
+      if (!payload.gender) {
+        return Result.Err({ BadRequest: "gender is missing" });
+      }
+      if (!payload.age) {
+        return Result.Err({ BadRequest: "age is missing" });
+      }
+      // Validate invalid fields
+      if (
+        !Object.values(Gender).includes(payload.gender as unknown as Gender)
+      ) {
+        return Result.Err({ BadRequest: "invalid gender" });
+      }
+      // Check if there is enough space available in the shelter
+      if (getCurrentShelterSize() + 1 > shelterCapacity) {
+        return Result.Err({ BadRequest: "no more space in the shelter" });
       }
 
       // Generate adoption listing identifier
@@ -282,11 +300,27 @@ export default Canister({
     [text],
     Result(AdoptionListing, Error),
     (adoptionListingId) => {
-      // Validate revoke adoption listing request
-      const err: Opt<Error> =
-        validateRevokeAdoptionListingRequest(adoptionListingId);
-      if (err.Some) {
-        return err.Some;
+      // Validate adoption listing identifier
+      if (!adoptionListingId) {
+        return Result.Err({ BadRequest: "adoption listing ID is missing" });
+      }
+      if (!adoptionListings.containsKey(adoptionListingId)) {
+        return Result.Err({
+          NotFound: `adoption listing with id "${adoptionListingId}" not found`,
+        });
+      }
+      const adoptionListing = adoptionListings.get(adoptionListingId).Some;
+      // Validate adoption listing submitter
+      if (adoptionListing?.listedBy.toText() != ic.caller().toText()) {
+        return Result.Err({
+          Forbidden: "only submitter can revoke adoption listing",
+        });
+      }
+      // Validate adoption listing status
+      if (adoptionListing?.adoptionStatus !== AdoptionStatus.Available) {
+        return Result.Err({
+          BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
+        });
       }
 
       // Remove adoption listing
@@ -305,17 +339,25 @@ export default Canister({
     [text],
     Result(AdoptionRequest, Error),
     (adoptionListingId) => {
-      // Validate adoption request
-      const err: Opt<Error> = validateAdoptionRequest(adoptionListingId);
-      if (err.Some) {
-        return err.Some;
+      // Validate adoption listing identifier
+      if (!adoptionListingId) {
+        return Result.Err({ BadRequest: "adoption listing ID is missing" });
+      }
+      if (!adoptionListings.containsKey(adoptionListingId)) {
+        return Result.Err({
+          NotFound: `adoption listing with id "${adoptionListingId}" not found`,
+        });
+      }
+      const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
+      // Validate adoption listing status
+      if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
+        return Result.Err({
+          BadRequest: `adoption request for adoption listings with status "${adoptionListing?.adoptionStatus}" cannot be submitted`,
+        });
       }
 
       // Generate adoption request identifier
       const id = uuidv4();
-
-      // Get adoption listing
-      const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
 
       // Populate adoption request
       const adoptionRequest: AdoptionRequest = {
@@ -349,10 +391,10 @@ export default Canister({
     (adoptionRequestId) => {
       // Validate adoption request identifier
       if (!adoptionRequestId) {
-        return Err({ BadRequest: "adoption request ID is missing" });
+        return Result.Err({ BadRequest: "adoption request ID is missing" });
       }
       if (!adoptionRequests.containsKey(adoptionRequestId)) {
-        return Err({
+        return Result.Err({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
       }
@@ -369,15 +411,27 @@ export default Canister({
     [text],
     Result(AdoptionRequest, Error),
     (adoptionRequestId) => {
-      // Validate adoption request approval
-      const err: Opt<Error> =
-        validateAdoptionRequestProcessing(adoptionRequestId);
-      if (err.Some) {
-        return err.Some;
+      // Only employees can approve adoption requests
+      if (!isEmployee(ic.caller())) {
+        return Result.Err({
+          Forbidden: "only employees can approve adoption requests",
+        });
       }
-
-      // Get adoption request
+      // Validate adoption request identifier
+      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+        return Result.Err({
+          NotFound: `adoption request with id "${adoptionRequestId}" not found`,
+        });
+      }
       const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
+      // Validate adoption request status
+      if (
+        adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending
+      ) {
+        return Result.Err({
+          BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be approved`,
+        });
+      }
 
       // Update adoption request status
       adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Approved;
@@ -405,15 +459,27 @@ export default Canister({
     [text],
     Result(AdoptionRequest, Error),
     (adoptionRequestId) => {
-      // Validate adoption request rejection
-      const err: Opt<Error> =
-        validateAdoptionRequestProcessing(adoptionRequestId);
-      if (err.Some) {
-        return err.Some;
+      // Only employees can reject adoption requests
+      if (!isEmployee(ic.caller())) {
+        return Result.Err({
+          Forbidden: "only employees can reject adoption requests",
+        });
       }
-
-      // Get adoption request
+      // Validate adoption request identifier
+      if (!adoptionRequests.containsKey(adoptionRequestId)) {
+        return Result.Err({
+          NotFound: `adoption request with id "${adoptionRequestId}" not found`,
+        });
+      }
       const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
+      // Validate adoption request status
+      if (
+        adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending
+      ) {
+        return Result.Err({
+          BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be rejected`,
+        });
+      }
 
       // Update adoption request status
       adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Rejected;
@@ -432,154 +498,6 @@ export default Canister({
     }
   ),
 });
-
-/**
- * Validates adoption listing payload
- * @param payload - Payload for adoption listing
- * @returns optional error
- */
-function validateAdoptionListingPayload(
-  payload: typeof AdoptionListingPayload
-): Opt<Error> {
-  // Validate missing fields
-  if (!payload.species) {
-    return Some(Err({ BadRequest: "species is missing" }));
-  }
-  if (!payload.breed) {
-    return Some(Err({ BadRequest: "breed is missing" }));
-  }
-  if (!payload.gender) {
-    return Some(Err({ BadRequest: "gender is missing" }));
-  }
-  if (!payload.age) {
-    return Some(Err({ BadRequest: "age is missing" }));
-  }
-
-  // Validate invalid fields
-  if (!Object.values(Gender).includes(payload.gender as unknown as Gender)) {
-    return Some(Err({ BadRequest: "invalid gender" }));
-  }
-
-  // Check if there is enough space available in the shelter
-  if (getCurrentShelterSize() + 1 > shelterCapacity) {
-    return Some(Err({ BadRequest: "no more space in the shelter" }));
-  }
-
-  return None;
-}
-
-/**
- * Validates revoke adoption listing request
- * @param adoptionListingId - Adoption listing identifier
- * @returns optional error
- */
-function validateRevokeAdoptionListingRequest(
-  adoptionListingId: text
-): Opt<Error> {
-  // Validate adoption listing identifier
-  if (!adoptionListingId) {
-    return Some(Err({ BadRequest: "adoption listing ID is missing" }));
-  }
-  if (!adoptionListings.containsKey(adoptionListingId)) {
-    return Some(
-      Err({
-        NotFound: `adoption listing with id "${adoptionListingId}" not found`,
-      })
-    );
-  }
-
-  const adoptionListing = adoptionListings.get(adoptionListingId).Some;
-
-  // Validate adoption listing submitter
-  if (adoptionListing?.listedBy.toText() != ic.caller().toText()) {
-    return Some(
-      Err({
-        Forbidden: "only submitter can revoke adoption listing",
-      })
-    );
-  }
-
-  // Validate adoption listing status
-  if (adoptionListing?.adoptionStatus !== AdoptionStatus.Available) {
-    return Some(
-      Err({
-        BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
-      })
-    );
-  }
-
-  return None;
-}
-
-/**
- * Validates adoption request
- * @param adoptionListingId - Adoption listing identifier
- * @returns optional error
- */
-function validateAdoptionRequest(adoptionListingId: text): Opt<Error> {
-  // Validate adoption listing identifier
-  if (!adoptionListingId) {
-    return Some(Err({ BadRequest: "adoption listing ID is missing" }));
-  }
-  if (!adoptionListings.containsKey(adoptionListingId)) {
-    return Some(
-      Err({
-        NotFound: `adoption listing with id "${adoptionListingId}" not found`,
-      })
-    );
-  }
-
-  const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
-
-  // Validate adoption listing status
-  if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
-    return Some(
-      Err({
-        BadRequest: `adoption request for adoption listings with status "${adoptionListing?.adoptionStatus}" cannot be submitted`,
-      })
-    );
-  }
-
-  return None;
-}
-
-/**
- * Validates adoption request processing
- * @param adoptionRequestId - Adoption request identifier
- * @returns optional error
- */
-function validateAdoptionRequestProcessing(
-  adoptionRequestId: text
-): Opt<Error> {
-  // Only employees can process adoption requests
-  if (!isEmployee(ic.caller())) {
-    return Some(
-      Err({
-        Forbidden: "only employees can process adoption requests",
-      })
-    );
-  }
-  // Validate adoption request identifier
-  if (!adoptionRequests.containsKey(adoptionRequestId)) {
-    return Some(
-      Err({
-        NotFound: `adoption request with id "${adoptionRequestId}" not found`,
-      })
-    );
-  }
-
-  const adoptionRequest = adoptionRequests.get(adoptionRequestId).Some!;
-
-  // Validate adoption request status
-  if (adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending) {
-    return Some(
-      Err({
-        BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be process`,
-      })
-    );
-  }
-  return None;
-}
 
 /**
  * Gets current shelter size
