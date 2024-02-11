@@ -155,7 +155,7 @@ export default Canister({
   addEmployee: update([Principal], Opt(Error), (employee) => {
     // Only an owner can add new employees
     if (!isCallerOwner()) {
-      return Some({ BadRequest: "only an owner can add an employee" });
+      return Some({ Forbidden: "only an owner can add an employee" });
     }
     // Validate employee
     if (employee.isAnonymous()) {
@@ -180,7 +180,7 @@ export default Canister({
   setShelterCapacity: update([nat16], Opt(Error), (newShelterCapacity) => {
     // Only an owner can update shelter capacity
     if (!isCallerOwner()) {
-      return Some({ BadRequest: "only an owner can set shelter capacity" });
+      return Some({ Forbidden: "only an owner can set shelter capacity" });
     }
     // Validate new shelter capacity
     if (newShelterCapacity < 0) {
@@ -483,7 +483,7 @@ function validateRevokeAdoptionListingRequest(
   if (!adoptionListings.containsKey(adoptionListingId)) {
     return Some(
       Err({
-        BadRequest: `adoption listing with id "${adoptionListingId}" not found`,
+        NotFound: `adoption listing with id "${adoptionListingId}" not found`,
       })
     );
   }
@@ -494,7 +494,7 @@ function validateRevokeAdoptionListingRequest(
   if (adoptionListing?.listedBy.toText() != ic.caller().toText()) {
     return Some(
       Err({
-        BadRequest: "only submitter can revoke adoption listing",
+        Forbidden: "only submitter can revoke adoption listing",
       })
     );
   }
@@ -524,7 +524,7 @@ function validateAdoptionRequest(adoptionListingId: text): Opt<Error> {
   if (!adoptionListings.containsKey(adoptionListingId)) {
     return Some(
       Err({
-        BadRequest: `adoption listing with id "${adoptionListingId}" not found`,
+        NotFound: `adoption listing with id "${adoptionListingId}" not found`,
       })
     );
   }
@@ -555,7 +555,7 @@ function validateAdoptionRequestProcessing(
   if (!isEmployee(ic.caller())) {
     return Some(
       Err({
-        BadRequest: "only employees can process adoption requests",
+        Forbidden: "only employees can process adoption requests",
       })
     );
   }
@@ -563,7 +563,7 @@ function validateAdoptionRequestProcessing(
   if (!adoptionRequests.containsKey(adoptionRequestId)) {
     return Some(
       Err({
-        BadRequest: `adoption request with id "${adoptionRequestId}" not found`,
+        NotFound: `adoption request with id "${adoptionRequestId}" not found`,
       })
     );
   }
