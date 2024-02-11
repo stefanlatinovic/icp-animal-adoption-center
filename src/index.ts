@@ -377,9 +377,7 @@ export default Canister({
       adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
 
       // Update adoption listing status
-      adoptionListing.adoptionStatus = AdoptionStatus.OnHold;
-      adoptionListing.updatedAt = Some(ic.time());
-      adoptionListings.insert(adoptionListing.id, adoptionListing);
+      updateAdoptionListingStatus(adoptionListing, AdoptionStatus.OnHold);
 
       return Result.Ok(adoptionRequest);
     }
@@ -439,9 +437,10 @@ export default Canister({
       }
 
       // Update adoption request status
-      adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Approved;
-      adoptionRequest.updatedAt = Some(ic.time());
-      adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
+      updateAdoptionRequestStatus(
+        adoptionRequest,
+        AdoptionRequestStatus.Approved
+      );
 
       // Get adoption listing
       const adoptionListing = adoptionListings.get(
@@ -449,9 +448,7 @@ export default Canister({
       ).Some!;
 
       // Update adoption listing status
-      adoptionListing.adoptionStatus = AdoptionStatus.Adopted;
-      adoptionListing.updatedAt = Some(ic.time());
-      adoptionListings.insert(adoptionListing.id, adoptionListing);
+      updateAdoptionListingStatus(adoptionListing, AdoptionStatus.Adopted);
 
       return Result.Ok(adoptionRequest);
     }
@@ -489,9 +486,10 @@ export default Canister({
       }
 
       // Update adoption request status
-      adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Rejected;
-      adoptionRequest.updatedAt = Some(ic.time());
-      adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
+      updateAdoptionRequestStatus(
+        adoptionRequest,
+        AdoptionRequestStatus.Rejected
+      );
 
       // Get adoption listing
       const adoptionListing = adoptionListings.get(
@@ -499,9 +497,7 @@ export default Canister({
       ).Some!;
 
       // Update adoption listing status
-      adoptionListing.adoptionStatus = AdoptionStatus.Available;
-      adoptionListing.updatedAt = Some(ic.time());
-      adoptionListings.insert(adoptionListing.id, adoptionListing);
+      updateAdoptionListingStatus(adoptionListing, AdoptionStatus.Available);
 
       return Result.Ok(adoptionRequest);
     }
@@ -517,6 +513,34 @@ function getCurrentShelterSize(): number {
     .values()
     .filter((listing) => listing.adoptionStatus !== AdoptionStatus.Adopted)
     .length;
+}
+
+/**
+ * Update the adoption listing status
+ * @param adoptionListing - Adoption listing to be updated
+ * @param newStatus - New adoption status
+ */
+function updateAdoptionListingStatus(
+  adoptionListing: AdoptionListing,
+  newStatus: AdoptionStatus
+): void {
+  adoptionListing.adoptionStatus = newStatus;
+  adoptionListing.updatedAt = Some(ic.time());
+  adoptionListings.insert(adoptionListing.id, adoptionListing);
+}
+
+/**
+ * Update the adoption request status
+ * @param adoptionRequest - Adoption request to be updated
+ * @param newStatus - New adoption request status
+ */
+function updateAdoptionRequestStatus(
+  adoptionRequest: AdoptionRequest,
+  newStatus: AdoptionRequestStatus
+): void {
+  adoptionRequest.adoptionRequestStatus = newStatus;
+  adoptionRequest.updatedAt = Some(ic.time());
+  adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
 }
 
 // Mocking the 'crypto' object for testing purposes
