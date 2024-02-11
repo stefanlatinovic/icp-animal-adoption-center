@@ -131,6 +131,9 @@ const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
 // Helper functions
+const isCallerOwner = () => {
+  return ic.caller().toText() === owner.toText();
+};
 const isEmployee = (employee: Principal) =>
   employees.some((emp) => {
     return JSON.stringify(employee) === JSON.stringify(emp);
@@ -151,7 +154,7 @@ export default Canister({
    */
   addEmployee: update([Principal], Opt(Error), (employee) => {
     // Only an owner can add new employees
-    if (ic.caller().toText() !== owner.toText()) {
+    if (!isCallerOwner()) {
       return Some({ BadRequest: "only an owner can add an employee" });
     }
     // Validate employee
@@ -176,7 +179,7 @@ export default Canister({
    */
   setShelterCapacity: update([nat16], Opt(Error), (newShelterCapacity) => {
     // Only an owner can update shelter capacity
-    if (ic.caller().toText() !== owner.toText()) {
+    if (!isCallerOwner()) {
       return Some({ BadRequest: "only an owner can set shelter capacity" });
     }
     // Validate new shelter capacity
