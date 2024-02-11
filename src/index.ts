@@ -136,6 +136,9 @@ const isEmployee = (employee: Principal) =>
   employees.some((emp) => {
     return JSON.stringify(employee) === JSON.stringify(emp);
   });
+const adoptionListingExists = (adoptionListingId: text) => {
+  return adoptionListings.containsKey(adoptionListingId);
+};
 
 export default Canister({
   /**
@@ -269,7 +272,7 @@ export default Canister({
       if (!adoptionListingId) {
         return Result.Err({ BadRequest: "adoption listing ID is missing" });
       }
-      if (!adoptionListings.containsKey(adoptionListingId)) {
+      if (!adoptionListingExists(adoptionListingId)) {
         return Result.Err({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
@@ -302,7 +305,7 @@ export default Canister({
       if (!adoptionListingId) {
         return Result.Err({ BadRequest: "adoption listing ID is missing" });
       }
-      if (!adoptionListings.containsKey(adoptionListingId)) {
+      if (!adoptionListingExists(adoptionListingId)) {
         return Result.Err({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
@@ -341,7 +344,7 @@ export default Canister({
       if (!adoptionListingId) {
         return Result.Err({ BadRequest: "adoption listing ID is missing" });
       }
-      if (!adoptionListings.containsKey(adoptionListingId)) {
+      if (!adoptionListingExists(adoptionListingId)) {
         return Result.Err({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
