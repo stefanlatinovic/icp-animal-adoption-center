@@ -1,5 +1,5 @@
 service: () -> {
-    addEmployee: (principal) -> (variant {Ok:principal; Err:variant {NotFound:text; Forbidden:text; BadRequest:text}});
+    addEmployee: (principal) -> (opt variant {NotFound:text; Forbidden:text; BadRequest:text});
     approveAdoptionRequest: (text) -> (variant {Ok:record {id:text; adoptionListingId:text; submittedAt:nat64; submittedBy:principal; adoptionRequestStatus:text; updatedAt:opt nat64}; Err:variant {NotFound:text; Forbidden:text; BadRequest:text}});
     getAdoptionListing: (text) -> (variant {Ok:record {id:text; listedAt:nat64; listedBy:principal; animal:record {age:nat8; name:text; description:text; gender:text; breed:text; species:text}; adoptionStatus:text; updatedAt:opt nat64}; Err:variant {NotFound:text; Forbidden:text; BadRequest:text}}) query;
     getAdoptionRequest: (text) -> (variant {Ok:record {id:text; adoptionListingId:text; submittedAt:nat64; submittedBy:principal; adoptionRequestStatus:text; updatedAt:opt nat64}; Err:variant {NotFound:text; Forbidden:text; BadRequest:text}}) query;

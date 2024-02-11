@@ -147,26 +147,26 @@ export default Canister({
   /**
    * Adds new employee
    * @param employee - Employee to be added
-   * @returns added new employee or an error
+   * @returns optional error
    */
-  addEmployee: update([Principal], Result(Principal, Error), (employee) => {
+  addEmployee: update([Principal], Opt(Error), (employee) => {
     // Only an owner can add new employees
     if (ic.caller().toText() !== owner.toText()) {
-      return Err({ BadRequest: "only an owner can add an employee" });
+      return Some({ BadRequest: "only an owner can add an employee" });
     }
     // Validate employee
     if (employee.isAnonymous()) {
-      return Err({ BadRequest: "employee cannot be anonymous" });
+      return Some({ BadRequest: "employee cannot be anonymous" });
     }
     if (isEmployee(employee)) {
-      return Err({
+      return Some({
         BadRequest: `"${employee}" is already an employee`,
       });
     }
 
     employees.push(employee);
 
-    return Ok(employee);
+    return None;
   }),
 
   /**
