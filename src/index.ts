@@ -378,6 +378,7 @@ export default Canister({
 
       // Update adoption listing status
       adoptionListing.adoptionStatus = AdoptionStatus.OnHold;
+      adoptionListing.updatedAt = Some(ic.time());
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
       return Result.Ok(adoptionRequest);
@@ -439,6 +440,7 @@ export default Canister({
 
       // Update adoption request status
       adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Approved;
+      adoptionRequest.updatedAt = Some(ic.time());
       adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
 
       // Get adoption listing
@@ -448,6 +450,7 @@ export default Canister({
 
       // Update adoption listing status
       adoptionListing.adoptionStatus = AdoptionStatus.Adopted;
+      adoptionListing.updatedAt = Some(ic.time());
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
       return Result.Ok(adoptionRequest);
@@ -487,6 +490,7 @@ export default Canister({
 
       // Update adoption request status
       adoptionRequest.adoptionRequestStatus = AdoptionRequestStatus.Rejected;
+      adoptionRequest.updatedAt = Some(ic.time());
       adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
 
       // Get adoption listing
@@ -496,6 +500,7 @@ export default Canister({
 
       // Update adoption listing status
       adoptionListing.adoptionStatus = AdoptionStatus.Available;
+      adoptionListing.updatedAt = Some(ic.time());
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
       return Result.Ok(adoptionRequest);
