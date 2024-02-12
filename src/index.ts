@@ -309,7 +309,7 @@ export default Canister({
       // Validate adoption listing status
       if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
         return Result.Err({
-          BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
+          BadRequest: `adoption listings with status "${adoptionListing.adoptionStatus}" cannot be revoked`,
         });
       }
 
