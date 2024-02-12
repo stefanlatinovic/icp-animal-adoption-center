@@ -128,21 +128,6 @@ const employees: Principal[] = [];
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
-// Helper functions
-const isCallerOwner = () => {
-  return ic.caller().toText() === owner.toText();
-};
-const isEmployee = (employee: Principal) =>
-  employees.some((emp) => {
-    return JSON.stringify(employee) === JSON.stringify(emp);
-  });
-const adoptionListingExists = (adoptionListingId: text) => {
-  return adoptionListings.containsKey(adoptionListingId);
-};
-const adoptionRequestExists = (adoptionRequestId: text) => {
-  return adoptionRequests.containsKey(adoptionRequestId);
-};
-
 export default Canister({
   /**
    * Initializes the canister and sets the owner of the animal adoption center
@@ -153,25 +138,25 @@ export default Canister({
 
   /**
    * Adds new employee
-   * @param employee - Employee to be added
+   * @param newEmployee - Employee to be added
    * @returns optional error
    */
-  addEmployee: update([Principal], Opt(Error), (employee) => {
+  addEmployee: update([Principal], Opt(Error), (newEmployee) => {
     // Only an owner can add new employees
     if (!isCallerOwner()) {
       return Some({ Forbidden: "only an owner can add an employee" });
     }
     // Validate employee
-    if (employee.isAnonymous()) {
+    if (newEmployee.isAnonymous()) {
       return Some({ BadRequest: "employee cannot be anonymous" });
     }
-    if (isEmployee(employee)) {
+    if (isEmployee(newEmployee)) {
       return Some({
-        BadRequest: `"${employee}" is already an employee`,
+        BadRequest: `"${newEmployee}" is already an employee`,
       });
     }
 
-    employees.push(employee);
+    employees.push(newEmployee);
 
     return None;
   }),
@@ -190,7 +175,9 @@ export default Canister({
     if (newShelterCapacity < 0) {
       return Some({ BadRequest: "shelter capacity cannot be negative" });
     }
+
     shelterCapacity = newShelterCapacity;
+
     return None;
   }),
 
@@ -237,7 +224,6 @@ export default Canister({
 
       // Generate adoption listing identifier
       const id = uuidv4();
-
       // Populate adoption listing
       const adoptionListing: AdoptionListing = {
         id: id,
@@ -254,7 +240,6 @@ export default Canister({
         listedAt: ic.time(),
         updatedAt: None,
       };
-
       // Store adoption listing
       adoptionListings.insert(adoptionListing.id, adoptionListing);
 
@@ -280,6 +265,7 @@ export default Canister({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
       }
+
       return Result.Ok(adoptionListings.get(adoptionListingId).Some!);
     }
   ),
@@ -313,15 +299,15 @@ export default Canister({
           NotFound: `adoption listing with id "${adoptionListingId}" not found`,
         });
       }
-      const adoptionListing = adoptionListings.get(adoptionListingId).Some;
+      const adoptionListing = adoptionListings.get(adoptionListingId).Some!;
       // Validate adoption listing submitter
-      if (adoptionListing?.listedBy.toText() != ic.caller().toText()) {
+      if (adoptionListing.listedBy.toText() != ic.caller().toText()) {
         return Result.Err({
           Forbidden: "only submitter can revoke adoption listing",
         });
       }
       // Validate adoption listing status
-      if (adoptionListing?.adoptionStatus !== AdoptionStatus.Available) {
+      if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
         return Result.Err({
           BadRequest: `adoption listings with status "${AdoptionStatus.Available}" cannot be revoked`,
         });
@@ -356,13 +342,12 @@ export default Canister({
       // Validate adoption listing status
       if (adoptionListing.adoptionStatus !== AdoptionStatus.Available) {
         return Result.Err({
-          BadRequest: `adoption request for adoption listings with status "${adoptionListing?.adoptionStatus}" cannot be submitted`,
+          BadRequest: `adoption request for adoption listings with status "${adoptionListing.adoptionStatus}" cannot be submitted`,
         });
       }
 
       // Generate adoption request identifier
       const id = uuidv4();
-
       // Populate adoption request
       const adoptionRequest: AdoptionRequest = {
         id: id,
@@ -372,10 +357,8 @@ export default Canister({
         submittedAt: ic.time(),
         updatedAt: None,
       };
-
       // Store adoption request
       adoptionRequests.insert(adoptionRequest.id, adoptionRequest);
-
       // Update adoption listing status
       updateAdoptionListingStatus(adoptionListing, AdoptionStatus.OnHold);
 
@@ -401,6 +384,7 @@ export default Canister({
           NotFound: `adoption request with id "${adoptionRequestId}" not found`,
         });
       }
+
       return Result.Ok(adoptionRequests.get(adoptionRequestId).Some!);
     }
   ),
@@ -432,7 +416,7 @@ export default Canister({
         adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending
       ) {
         return Result.Err({
-          BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be approved`,
+          BadRequest: `adoption request with status "${adoptionRequest.adoptionRequestStatus}" cannot be approved`,
         });
       }
 
@@ -441,12 +425,10 @@ export default Canister({
         adoptionRequest,
         AdoptionRequestStatus.Approved
       );
-
       // Get adoption listing
       const adoptionListing = adoptionListings.get(
         adoptionRequest.adoptionListingId
       ).Some!;
-
       // Update adoption listing status
       updateAdoptionListingStatus(adoptionListing, AdoptionStatus.Adopted);
 
@@ -481,7 +463,7 @@ export default Canister({
         adoptionRequest.adoptionRequestStatus != AdoptionRequestStatus.Pending
       ) {
         return Result.Err({
-          BadRequest: `adoption request with status "${adoptionRequest?.adoptionRequestStatus}" cannot be rejected`,
+          BadRequest: `adoption request with status "${adoptionRequest.adoptionRequestStatus}" cannot be rejected`,
         });
       }
 
@@ -490,12 +472,10 @@ export default Canister({
         adoptionRequest,
         AdoptionRequestStatus.Rejected
       );
-
       // Get adoption listing
       const adoptionListing = adoptionListings.get(
         adoptionRequest.adoptionListingId
       ).Some!;
-
       // Update adoption listing status
       updateAdoptionListingStatus(adoptionListing, AdoptionStatus.Available);
 
@@ -503,6 +483,42 @@ export default Canister({
     }
   ),
 });
+
+/**
+ * Checks if the caller is the owner
+ * @returns True if the caller is the owner, false otherwise
+ */
+const isCallerOwner = (): boolean => {
+  return ic.caller().toText() === owner.toText();
+};
+
+/**
+ * Checks if the user is an employee
+ * @param user - The user to check
+ * @returns True if the user is an employee, false otherwise
+ */
+const isEmployee = (user: Principal): boolean =>
+  employees.some((employee) => {
+    return JSON.stringify(user) === JSON.stringify(employee);
+  });
+
+/**
+ * Checks if the adoption listing exists
+ * @param adoptionListingId - Adoption listing identifier
+ * @returns True if the adoption listing exists, false otherwise
+ */
+const adoptionListingExists = (adoptionListingId: text): boolean => {
+  return adoptionListings.containsKey(adoptionListingId);
+};
+
+/**
+ * Checks if the adoption request exists
+ * @param adoptionRequestId - Adoption request identifier
+ * @returns True if the adoption request exists, false otherwise
+ */
+const adoptionRequestExists = (adoptionRequestId: text): boolean => {
+  return adoptionRequests.containsKey(adoptionRequestId);
+};
 
 /**
  * Gets current shelter size
