@@ -117,14 +117,15 @@ const Error = Variant({
   BadRequest: text,
 });
 
-// Owner of the animal adoption center
-let owner: Principal;
-
-// Shelter capacity
-let shelterCapacity: nat16 = 5;
+// Single-value data are stored in `StableBTreeMap` to preserve them across canister upgrades
+// This data will be stored and retrieved using constant keys
+const OWNER_KEY: text = "owner";
+const SHELTER_CAPACITY_KEY: text = "shelter_capacity";
 
 // Storage variables
+const owner = StableBTreeMap<text, Principal>(0);
 const employees = StableBTreeMap<text, Principal>(0);
+const shelterCapacity = StableBTreeMap<text, nat16>(0);
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
@@ -133,7 +134,8 @@ export default Canister({
    * Initializes the canister and sets the owner of the animal adoption center
    */
   init: init([], () => {
-    owner = ic.caller();
+    owner.insert(OWNER_KEY, ic.caller());
+    shelterCapacity.insert(SHELTER_CAPACITY_KEY, 5);
   }),
 
   /**
@@ -156,7 +158,7 @@ export default Canister({
       });
     }
 
-    employees.push(newEmployee);
+    employees.insert(newEmployee.toText(), newEmployee);
 
     return None;
   }),
@@ -176,7 +178,7 @@ export default Canister({
       return Some({ BadRequest: "shelter capacity cannot be negative" });
     }
 
-    shelterCapacity = newShelterCapacity;
+    shelterCapacity.insert(SHELTER_CAPACITY_KEY, newShelterCapacity);
 
     return None;
   }),
@@ -186,7 +188,7 @@ export default Canister({
    * @returns shelter capacity
    */
   getShelterCapacity: update([], nat16, () => {
-    return shelterCapacity;
+    return shelterCapacity.get(SHELTER_CAPACITY_KEY).Some!;
   }),
 
   /**
@@ -218,7 +220,10 @@ export default Canister({
         return Result.Err({ BadRequest: "invalid gender" });
       }
       // Check if there is enough space available in the shelter
-      if (getCurrentShelterSize() + 1 > shelterCapacity) {
+      if (
+        getCurrentShelterSize() + 1 >
+        shelterCapacity.get(SHELTER_CAPACITY_KEY).Some!
+      ) {
         return Result.Err({ BadRequest: "no more space in the shelter" });
       }
 
@@ -489,7 +494,7 @@ export default Canister({
  * @returns True if the caller is the owner, false otherwise
  */
 const isCallerOwner = (): boolean => {
-  return ic.caller().toText() === owner.toText();
+  return ic.caller().toText() === owner.get(OWNER_KEY).Some!.toText();
 };
 
 /**
@@ -497,10 +502,9 @@ const isCallerOwner = (): boolean => {
  * @param user - The user to check
  * @returns True if the user is an employee, false otherwise
  */
-const isEmployee = (user: Principal): boolean =>
-  employees.some((employee) => {
-    return JSON.stringify(user) === JSON.stringify(employee);
-  });
+const isEmployee = (user: Principal): boolean => {
+  return employees.containsKey(user.toText());
+};
 
 /**
  * Checks if the adoption listing exists
