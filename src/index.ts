@@ -124,7 +124,7 @@ let owner: Principal;
 let shelterCapacity: nat16 = 5;
 
 // Storage variables
-const employees: Principal[] = [];
+const employees = StableBTreeMap<text, Principal>(0);
 const adoptionListings = StableBTreeMap<text, AdoptionListing>(0);
 const adoptionRequests = StableBTreeMap<text, AdoptionRequest>(0);
 
